@@ -9,4 +9,6 @@
     <string name="person_count">Found %d people</string>
     <string name="create">CREATE</string>
     <string name="enter_age">Enter Age</string>
+    <string name="ascending">Ascending</string>
+    <string name="descending">Descending</string>
 </resources>

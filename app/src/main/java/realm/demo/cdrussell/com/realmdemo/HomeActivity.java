@@ -1,23 +1,32 @@
 package realm.demo.cdrussell.com.realmdemo;
 
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import io.realm.Realm;
+import io.realm.RealmResults;
+import realm.demo.cdrussell.com.realmdemo.adapter.PersonAdapter;
 import realm.demo.cdrussell.com.realmdemo.model.Person;
+
+import static io.realm.Sort.DESCENDING;
 
 public class HomeActivity extends AppCompatActivity {
 
+    private RecyclerView recyclerView;
     private EditText nameEntry;
     private EditText ageEntry;
     private TextView personCountText;
     private Realm realm;
+    private List<Person> people;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,18 +35,15 @@ public class HomeActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
-
+        recyclerView = (RecyclerView) findViewById(R.id.list_view);
         personCountText = (TextView) findViewById(R.id.person_count);
         nameEntry = (EditText) findViewById(R.id.name);
         ageEntry = (EditText) findViewById(R.id.age);
+
+        people = new ArrayList<>();
+        PersonAdapter adapter = new PersonAdapter(people);
+        recyclerView.setAdapter(adapter);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         realm = Realm.getInstance(this);
     }
@@ -55,7 +61,23 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void refreshView() {
-        personCountText.setText(getString(R.string.person_count, realm.where(Person.class).findAll().size()));
+        RealmResults<Person> searchResults = getAllSavedPeople();
+        updateRecyclerView(searchResults);
+        personCountText.setText(getString(R.string.person_count, searchResults.size()));
+    }
+
+    private void updateRecyclerView(RealmResults<Person> searchResults) {
+        people.clear();
+        people.addAll(searchResults);
+        recyclerView.getAdapter().notifyDataSetChanged();
+    }
+
+    private int getAge() {
+        try {
+            return Integer.valueOf(ageEntry.getText().toString());
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     public void onCreateButtonPressed(View view) {
@@ -70,11 +92,19 @@ public class HomeActivity extends AppCompatActivity {
         refreshView();
     }
 
-    private int getAge() {
-        try {
-            return Integer.valueOf(ageEntry.getText().toString());
-        } catch (NumberFormatException e) {
-            return 0;
-        }
+    public void onSortAscending(View view) {
+        RealmResults<Person> searchResults = getAllSavedPeople();
+        searchResults.sort("name");
+        updateRecyclerView(searchResults);
+    }
+
+    public void onSortDescending(View view) {
+        RealmResults<Person> searchResults = getAllSavedPeople();
+        searchResults.sort("name", DESCENDING);
+        updateRecyclerView(searchResults);
+    }
+
+    private RealmResults<Person> getAllSavedPeople() {
+        return realm.allObjects(Person.class);
     }
 }
